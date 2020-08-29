@@ -9,6 +9,8 @@ build/
 .metadata/
 .settings/
  
+.vscode/
+
 # Vi and Emacs backup files
 *~
 \#*\#

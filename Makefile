@@ -29,7 +29,7 @@
 ################################################################################
 
 # Target board/hardware
-TARGET=CY8CPROTO-062-4343W
+TARGET=CY8CKIT-062S2-43012
 
 # Name of application (used to derive name of final linked file).
 APPNAME=mtb-example-psoc6-empty-app
@@ -67,7 +67,7 @@ VERBOSE=
 # ... then code in directories named COMPONENT_foo and COMPONENT_bar will be
 # added to the build
 #
-COMPONENTS=
+COMPONENTS=FREERTOS WICED_BLE EMWIN_OSNTS
 
 # Like COMPONENTS, but disable optional code that was enabled by default.
 DISABLE_COMPONENTS=
