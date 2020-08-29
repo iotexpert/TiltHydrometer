@@ -48,7 +48,7 @@ const mtb_st7789v_pins_t tft_pins =
 
 void displayThread(void *arg)
 {
-    dataQueue = xQueueCreate(10,sizeof(dm_response_t));
+    dataQueue = xQueueCreate(10,sizeof(tdm_dataRsp_t));
     actionQueue = xQueueCreate(10,sizeof(dm_action_msg_t));
 
     /* Initialize the display controller */
@@ -126,7 +126,7 @@ void displayScreenTableInit()
 
 void displayScreenTableUpdate()
 {
-    dm_response_t myResponse;
+    tdm_dataRsp_t myResponse;
 
     uint32_t activeTilts =tilt_getActiveTiltMask();
 
@@ -144,7 +144,7 @@ void displayScreenTableUpdate()
     {
         if(1<<i & activeTilts)
         {
-            tdm_getDataPointCopy(i,dataQueue);
+             tmd_submitGetDataCopy(i,dataQueue);
             xQueueReceive(dataQueue,&myResponse,portMAX_DELAY);
 
             GUI_SetColor(tilt_colorGUI(i));

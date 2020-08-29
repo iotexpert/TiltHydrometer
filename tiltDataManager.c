@@ -2,23 +2,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-QueueHandle_t dmQueueHandle;
+QueueHandle_t tdm_cmdQueue;
 
-void tdm_dataManagerTask(void *arg)
+void tdm_task(void *arg)
 {
-    dmQueueHandle = xQueueCreate(10,sizeof(dmCmdMsg_t));
-    dmCmdMsg_t msg;
+    tdm_cmdQueue = xQueueCreate(10,sizeof(tdm_cmdMsg_t));
+    tdm_cmdMsg_t msg;
     tilt_data_t *dp;
-    dm_response_t response;
+    tdm_dataRsp_t response;
     while(1)
     {
-        xQueueReceive(dmQueueHandle,&msg,portMAX_DELAY);
+        xQueueReceive(tdm_cmdQueue,&msg,portMAX_DELAY);
         switch(msg.cmd)
         {
-            case dm_addDataPoint:
+            case ADD_DATA_POINT:
                 tilt_addData(msg.tilt,msg.msg);
             break;
-            case dm_getDataPoint:
+            case GET_DATA_POINT:
                 dp = tilt_getDataPointCopy(msg.tilt);
                 response.response = dp;
                 xQueueSend(msg.msg,&response,0); // ARH 0 is probably a bad idea
@@ -30,28 +30,32 @@ void tdm_dataManagerTask(void *arg)
 
 
 
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// These functions submit commands to main command queue: tdm_cmdQueue
+// 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void tdm_submitNewData(tiltHandle_t handle,tilt_data_t *data)
 {
-    dmCmdMsg_t msg;
+    tdm_cmdMsg_t msg;
     msg.msg = data;
     msg.tilt = handle;
-    msg.cmd =  dm_addDataPoint;
-    if(xQueueSend(dmQueueHandle,&msg,0) != pdTRUE)
+    msg.cmd =  ADD_DATA_POINT;
+    if(xQueueSend(tdm_cmdQueue,&msg,0) != pdTRUE)
     {
         printf("failed to send to dmQueue\n");
         free(data);
     }
 }
 
-void tdm_getDataPointCopy(tiltHandle_t handle,QueueHandle_t queue)
+void  tmd_submitGetDataCopy(tiltHandle_t handle,QueueHandle_t queue)
 {
-    dmCmdMsg_t msg;
+    tdm_cmdMsg_t msg;
     msg.msg = queue;
     msg.tilt = handle;
-    msg.cmd =  dm_getDataPoint;
-    if(xQueueSend(dmQueueHandle,&msg,0) != pdTRUE)
+    msg.cmd =  GET_DATA_POINT;
+    if(xQueueSend(tdm_cmdQueue,&msg,0) != pdTRUE)
     {
         printf("failed to send to dmQueue\n");
     }

@@ -81,7 +81,7 @@ int main(void)
     xTaskCreate(blinkTask, "Blink", configMINIMAL_STACK_SIZE,0 /* args */ ,0 /* priority */, &blinkTaskHandle);
     xTaskCreate(ntShellTask, "NT Shell", configMINIMAL_STACK_SIZE*4,0 /* args */ ,0 /* priority */, 0);
     xTaskCreate(displayThread, "Display Manager", configMINIMAL_STACK_SIZE*3,0 /* args */ ,0 /* priority */, 0);
-    xTaskCreate(tdm_dataManagerTask, "Data Manager", configMINIMAL_STACK_SIZE*2,0 /* args */ ,0 /* priority */, 0);
+    xTaskCreate(tdm_task, "Tile Data Manager", configMINIMAL_STACK_SIZE*2,0 /* args */ ,0 /* priority */, 0);
 
     vTaskStartScheduler();
 

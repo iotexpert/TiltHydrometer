@@ -2,30 +2,29 @@
 
 #include "FreeRTOS.h"
 #include "queue.h"
-
 #include "tilt.h"
 
-extern QueueHandle_t dmQueueHandle;
+extern QueueHandle_t tdm_cmdQueue;
 
 
 typedef enum {
-    dm_addDataPoint,
-    dm_getDataPoint,
-} dmCmd_t;
+    ADD_DATA_POINT,
+    GET_DATA_POINT,
+} tdm_cmd_t;
 
 typedef struct {
-    dmCmd_t cmd;
+    tdm_cmd_t cmd;
     tiltHandle_t tilt;
     void *msg;
-} dmCmdMsg_t;
+} tdm_cmdMsg_t;
 
 
 typedef struct {
     tilt_data_t *response;
-} dm_response_t;
+} tdm_dataRsp_t;
 
 
 
-void tdm_dataManagerTask(void *arg);
+void tdm_task(void *arg);
 void tdm_submitNewData(tiltHandle_t handle,tilt_data_t *data);
-void tdm_getDataPointCopy(tiltHandle_t handle,QueueHandle_t queue);
+void  tmd_submitGetDataCopy(tiltHandle_t handle,QueueHandle_t queue);
