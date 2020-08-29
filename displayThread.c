@@ -103,10 +103,7 @@ void displayScreenTableInit()
     GUI_SetColor(GUI_WHITE);
     GUI_SetBkColor(GUI_BLACK);
     GUI_SetFont(GUI_FONT_24B_ASCII);
-
-    printf("Name left %d center %d right %d\n",NAME_LEFT_X,NAME_CENTER_X,NAME_RIGHT_X);
-    printf("Grav left %d center %d right %d\n",GRAV_LEFT_X,GRAV_CENTER_X,GRAV_RIGHT_X);
-    printf("Temp left %d center %d right %d\n",TEMP_LEFT_X,TEMP_CENTER_X,TEMP_RIGHT_X);
+    GUI_Clear();
 
     GUI_FillRect(0,0,320,GUI_GetFontSizeY()+ TOP_MARGIN);
 
@@ -133,6 +130,7 @@ void displayScreenTableUpdate()
     
     GUI_SetColor(GUI_WHITE);
     GUI_SetBkColor(GUI_BLACK);
+    
     GUI_SetFont(GUI_FONT_24B_ASCII);
     GUI_SetTextMode(GUI_TEXTMODE_NORMAL);
     GUI_SetTextAlign(GUI_TA_CENTER);

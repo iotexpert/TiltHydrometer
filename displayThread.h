@@ -1,5 +1,6 @@
 #pragma once
-#include "tilt.h"
+#include "tiltDataManager.h"
+
 void displayThread(void *arg);
 
 typedef enum {

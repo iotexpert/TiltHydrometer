@@ -15,7 +15,6 @@
 #include "app_bt_cfg.h"
 #include "wiced_bt_dev.h"
 #include "wiced_bt_trace.h"
-#include "tilt.h"
 
 #include "btutil.h"
 
