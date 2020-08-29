@@ -8,6 +8,18 @@
 #include "tilt.h"
 #include "tiltDataManager.h"
 #include "GUI.h"
+
+
+typedef struct  {
+    char *colorName;
+    GUI_COLOR color;
+    uint8_t uuid[20];
+    tilt_data_t *data;
+    int numDataPoints;
+    int numDataSeen;
+} tilt_t;
+
+
 #define IBEACON_HEADER 0x4C,0x00,0x02,0x15
 
 #define GUI_PINK GUI_MAKE_COLOR(0x00CCCCFF)
@@ -84,7 +96,6 @@ void tilt_addData(tiltHandle_t handle, tilt_data_t *data)
     tiltDB[handle].data = data; 
     tiltDB[handle].numDataSeen += 1;
     tiltDB[handle].numDataPoints = 1;
-
 }
 
 int tilt_getNumTilt()

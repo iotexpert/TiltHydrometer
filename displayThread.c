@@ -18,7 +18,6 @@ static QueueHandle_t dataQueue;
 QueueHandle_t actionQueue;
 
 static display_screen_name_t currentScreen;
-static tilt_t *currentTilt=0;
 
 typedef struct {
  display_screen_name_t screenName;
@@ -174,12 +173,3 @@ void displayScreenTableUpdate()
   
 }
 
-
-
-/////////////// View Controller ////////////////
-
-void display_setCurrentTilt(tilt_t *tilt)
-{
-    currentTilt = tilt;
-
-}

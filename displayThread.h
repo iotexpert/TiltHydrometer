@@ -17,5 +17,3 @@ typedef enum {
     screen_table,
     screen_single,
 } display_screen_name_t;
-
-void display_setCurrentTilt(tilt_t *tilt);
