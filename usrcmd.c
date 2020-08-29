@@ -149,7 +149,7 @@ static int usrcmd_newData(int argc,char **argv)
 
     if(argc == 4)
     {
-        tilt_data_t *newData = malloc(sizeof(tilt_data_t));
+        tdm_tiltData_t *newData = malloc(sizeof(tdm_tiltData_t));
         sscanf(argv[1],"%d",&tilt);
         sscanf(argv[2],"%f",&newData->gravity);
         sscanf(argv[3],"%d",&newData->temperature);
@@ -165,11 +165,11 @@ static int usrcmd_newData(int argc,char **argv)
 
 static int usrcmd_initData(int argc,char **argv)
 {
-    tilt_data_t *newData;
-    for(int i=0;i<tilt_getNumTilt();i++)
+    tdm_tiltData_t *newData;
+    for(int i=0;i<tdm_getNumTilt();i++)
     {
 
-        newData = malloc(sizeof(tilt_data_t));
+        newData = malloc(sizeof(tdm_tiltData_t));
         
         newData->gravity = 1.0 + (.001*(float)(i+1));
         newData->temperature = 11*(i+1);

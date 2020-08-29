@@ -1,7 +1,9 @@
 #pragma once
+#include <stdint.h>
 
 #include "FreeRTOS.h"
 #include "queue.h"
+
 #include "GUI.h"
 
 #include "wiced_bt_ble.h"
@@ -14,35 +16,25 @@ typedef struct {
     int8_t rssi;
     int8_t txPower;
 	uint32_t time;
-} tilt_data_t;
+} tdm_tiltData_t;
 
 typedef struct {
-    tilt_data_t *response;
+    tdm_tiltData_t *response;
 } tdm_dataRsp_t;
 
-
-
-typedef int tiltHandle_t;
-
+typedef int tdm_tiltHandle_t;
 
 void tdm_task(void *arg);
-void tdm_submitNewData(tiltHandle_t handle,tilt_data_t *data);
-void  tmd_submitGetDataCopy(tiltHandle_t handle,QueueHandle_t queue);
+
+void tdm_submitNewData(tdm_tiltHandle_t handle,tdm_tiltData_t *data);
+void tdm_submitGetDataCopy(tdm_tiltHandle_t handle,QueueHandle_t queue);
+
+/// Called by the Bluetooth App when it finds new iBeacons... will submit to the queue
+void tdm_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_t *p_scan_result);
 
 
-
-void tilt_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_t *p_scan_result);
-void tilt_addData(tiltHandle_t handle, tilt_data_t *data);
-
-// Return a bitmask of the active handles
-uint32_t tilt_getActiveTiltMask();
-void tilt_requestActive(tiltHandle_t);
-
-// malloc a copy of the data... the caller is responsible for the free
-tilt_data_t *tilt_getDataPointCopy(tiltHandle_t handle);
-
-/////////////// Generally callable threadsafe
-
-int tilt_getNumTilt();
-char *tilt_colorString(tiltHandle_t handle);
-GUI_COLOR tilt_colorGUI(tiltHandle_t handle);
+/////////////// Generally callable threadsafe - non blocking
+uint32_t tdm_getActiveTiltMask();              // Return a bitmask of the active handles
+int tdm_getNumTilt();                          // Returns the number of tilts (probably always 8)
+char *tdm_colorString(tdm_tiltHandle_t handle);    // Return a char * to the color string for the tilt
+GUI_COLOR tdm_colorGUI(tdm_tiltHandle_t handle);   // Return a GUI_COLOR for the tilt

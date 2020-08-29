@@ -124,7 +124,7 @@ void displayScreenTableUpdate()
 {
     tdm_dataRsp_t myResponse;
 
-    uint32_t activeTilts =tilt_getActiveTiltMask();
+    uint32_t activeTilts =tdm_getActiveTiltMask();
 
     char buff[64];
     
@@ -137,16 +137,16 @@ void displayScreenTableUpdate()
 
     int row=1;
 
-    for(int i=0;i<tilt_getNumTilt();i++)
+    for(int i=0;i<tdm_getNumTilt();i++)
     {
         if(1<<i & activeTilts)
         {
-             tmd_submitGetDataCopy(i,dataQueue);
+             tdm_submitGetDataCopy(i,dataQueue);
             xQueueReceive(dataQueue,&myResponse,portMAX_DELAY);
 
-            GUI_SetColor(tilt_colorGUI(i));
+            GUI_SetColor(tdm_colorGUI(i));
 
-            GUI_DispStringHCenterAt(tilt_colorString(i), NAME_CENTER_X, ROW_Y(row));
+            GUI_DispStringHCenterAt(tdm_colorString(i), NAME_CENTER_X, ROW_Y(row));
             sprintf(buff,"%1.3f",myResponse.response->gravity);
             GUI_DispStringHCenterAt(buff, GRAV_CENTER_X, ROW_Y(row));
             sprintf(buff,"%02d",myResponse.response->temperature);

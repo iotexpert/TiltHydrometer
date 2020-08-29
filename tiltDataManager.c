@@ -11,6 +11,9 @@
 #include "task.h"
 #include "queue.h"
 
+void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data);
+tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle);
+
 QueueHandle_t tdm_cmdQueue;
 
 typedef enum {
@@ -20,7 +23,7 @@ typedef enum {
 
 typedef struct {
     tdm_cmd_t cmd;
-    tiltHandle_t tilt;
+    tdm_tiltHandle_t tilt;
     void *msg;
 } tdm_cmdMsg_t;
 
@@ -29,7 +32,7 @@ void tdm_task(void *arg)
 {
     tdm_cmdQueue = xQueueCreate(10,sizeof(tdm_cmdMsg_t));
     tdm_cmdMsg_t msg;
-    tilt_data_t *dp;
+    tdm_tiltData_t *dp;
     tdm_dataRsp_t response;
     while(1)
     {
@@ -37,10 +40,10 @@ void tdm_task(void *arg)
         switch(msg.cmd)
         {
             case ADD_DATA_POINT:
-                tilt_addData(msg.tilt,msg.msg);
+                tdm_addData(msg.tilt,msg.msg);
             break;
             case GET_DATA_POINT:
-                dp = tilt_getDataPointCopy(msg.tilt);
+                dp = tdm_getDataPointCopy(msg.tilt);
                 response.response = dp;
                 xQueueSend(msg.msg,&response,0); // ARH 0 is probably a bad idea
             break;
@@ -54,7 +57,7 @@ typedef struct  {
     char *colorName;
     GUI_COLOR color;
     uint8_t uuid[20];
-    tilt_data_t *data;
+    tdm_tiltData_t *data;
     int numDataPoints;
     int numDataSeen;
 } tilt_t;
@@ -83,7 +86,7 @@ static tilt_t tiltDB [] =
 //
 // Should I reall compare all of this data every time?
 //
-void tilt_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_t *p_scan_result)
+void tdm_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_t *p_scan_result)
 {
     if(len != 25)
         return;
@@ -97,11 +100,11 @@ void tilt_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_
 		    float gravity = ((float)((uint16_t)mfgAdvField[22] << 8 | (uint16_t)mfgAdvField[23]))/1000;
 		    int temperature = mfgAdvField[20] << 8 | mfgAdvField[21];
 
-            tilt_data_t *data;
+            tdm_tiltData_t *data;
             // The tilt repeater will send out 0's if it hasnt heard anything
             if(gravity !=0 && temperature != 0)
             {
-                data = malloc(sizeof(tilt_data_t));
+                data = malloc(sizeof(tdm_tiltData_t));
                 
                 data->gravity     = gravity;
                 data->temperature = temperature;
@@ -117,17 +120,17 @@ void tilt_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_
     }
 }
 
-char *tilt_colorString(tiltHandle_t handle)
+char *tdm_colorString(tdm_tiltHandle_t handle)
 {
     return tiltDB[handle].colorName;
 }
 
-GUI_COLOR tilt_colorGUI(tiltHandle_t handle)
+GUI_COLOR tdm_colorGUI(tdm_tiltHandle_t handle)
 {
     return tiltDB[handle].color;
 }
 
-void tilt_addData(tiltHandle_t handle, tilt_data_t *data)
+void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data)
 {
     if(tiltDB[handle].data != 0)
     {
@@ -138,12 +141,12 @@ void tilt_addData(tiltHandle_t handle, tilt_data_t *data)
     tiltDB[handle].numDataPoints = 1;
 }
 
-int tilt_getNumTilt()
+int tdm_getNumTilt()
 {
     return NUM_TILT;
 }
 
-uint32_t tilt_getActiveTiltMask()
+uint32_t tdm_getActiveTiltMask()
 {
     uint32_t mask=0;
     for(int i=0;i<NUM_TILT;i++)
@@ -154,11 +157,11 @@ uint32_t tilt_getActiveTiltMask()
     return mask;
 }
 
-tilt_data_t *tilt_getDataPointCopy(tiltHandle_t handle)
+tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle)
 {
-    tilt_data_t *dp;
-    dp = malloc(sizeof(tilt_data_t));
-    memcpy(dp,tiltDB[handle].data,sizeof(tilt_data_t));
+    tdm_tiltData_t *dp;
+    dp = malloc(sizeof(tdm_tiltData_t));
+    memcpy(dp,tiltDB[handle].data,sizeof(tdm_tiltData_t));
     return dp;
 
 }
@@ -170,7 +173,7 @@ tilt_data_t *tilt_getDataPointCopy(tiltHandle_t handle)
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void tdm_submitNewData(tiltHandle_t handle,tilt_data_t *data)
+void tdm_submitNewData(tdm_tiltHandle_t handle,tdm_tiltData_t *data)
 {
     tdm_cmdMsg_t msg;
     msg.msg = data;
@@ -183,7 +186,7 @@ void tdm_submitNewData(tiltHandle_t handle,tilt_data_t *data)
     }
 }
 
-void  tmd_submitGetDataCopy(tiltHandle_t handle,QueueHandle_t queue)
+void  tdm_submitGetDataCopy(tdm_tiltHandle_t handle,QueueHandle_t queue)
 {
     tdm_cmdMsg_t msg;
     msg.msg = queue;

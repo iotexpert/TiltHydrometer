@@ -17,6 +17,7 @@
 #include "wiced_bt_trace.h"
 
 #include "btutil.h"
+#include "tiltDataManager.h"
 
 QueueHandle_t bluetoothAppQueueHandle;
 
@@ -31,7 +32,7 @@ void adv_scan_result_cback(wiced_bt_ble_scan_results_t *p_scan_result, uint8_t *
 	mfgFieldData = wiced_bt_ble_check_advertising_data(p_adv_data,BTM_BLE_ADVERT_TYPE_MANUFACTURER,&mfgFieldLen);
     
 	if(mfgFieldData)
-		tilt_processIbeacon(mfgFieldData,mfgFieldLen,p_scan_result);
+		tdm_processIbeacon(mfgFieldData,mfgFieldLen,p_scan_result);
 }
 
 void processBluetoothAppQueue(TimerHandle_t xTimer)
