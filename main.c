@@ -1,13 +1,11 @@
 #include <stdio.h>
 
-#include "cy_pdl.h"
 #include "cyhal.h"
 #include "cybsp.h"
 #include "cy_retarget_io.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
-
 
 #include "bluetoothManager.h"
 #include "wiced_bt_stack.h"
@@ -27,10 +25,7 @@ ntshell_t nts_shell;
 
 void nts_task()
 {
-
-
   printf("Started ntshell\n");
-  setvbuf(stdin, NULL, _IONBF, 0);
   ntshell_init(
 	       &nts_shell,
 	       ntshell_read,
@@ -58,9 +53,7 @@ int main(void)
 {
     uxTopUsedPriority = configMAX_PRIORITIES - 1 ; // enable OpenOCD Thread Debugging
 
-    /* Initialize the device and board peripherals */
     cybsp_init() ;
-
     __enable_irq();
 
     cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE);

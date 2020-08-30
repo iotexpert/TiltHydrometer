@@ -1,49 +1,56 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// #include "cyhal.h"
-// #include "cybsp.h"
 #include "GUI.h"
 #include "mtb_st7789v.h"
+#include "cy8ckit_028_tft_pins.h"
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 
-#include "cy8ckit_028_tft_pins.h"
 #include "displayManager.h"
 #include "tiltDataManager.h"
 
 
 typedef enum {
-    display_refresh,
+    SCREEN_NEXT,
 
-} dm_action_t;
+} dm_cmd_t;
 
 typedef struct {
-    dm_action_t action;
-} dm_action_msg_t;
-
+    dm_cmd_t cmd;
+} dm_cmdMsg_t;
 
 typedef enum {
-    screen_splash,
-    screen_table,
-    screen_single,
-} display_screen_name_t;
+    SPLASH,
+    TABLE,
+    SINGLE,
+} dm_screenName_t;
 
-static QueueHandle_t dataQueue;
+static QueueHandle_t dm_cmdQueue;
+static QueueHandle_t dm_dataQueue;
+static dm_screenName_t dm_currentScreen;
 
-QueueHandle_t actionQueue;
 
-static display_screen_name_t currentScreen;
+static void dm_nextScreen();
 
-typedef struct {
- display_screen_name_t screenName;
- void (*displayFunction)(void *data);
-} display_functionmap_t;
+static bool dm_displayScreenSplashPre();
+static void dm_displayScreenSplashInit();
+static void dm_displayScreenSplashUpdate();
+static bool dm_displayScreenSplashSeq();
 
-void displayScreenSplash();
-void displayScreenTableInit();
-void displayScreenTableUpdate();
+static bool dm_displayScreenTablePre();
+static void dm_displayScreenTableInit();
+static void dm_displayScreenTableUpdate();
+static bool dm_displayScreenTableSeq();
+
+static bool dm_displaySinglePre();
+static void dm_displaySingleInit();
+static void dm_displaySingleUpdate();
+static bool dm_displaySingleSeq();
+
+
 
 /* The pins above are defined by the CY8CKIT-028-TFT library. If the display is being used on different hardware the mappings will be different. */
 const mtb_st7789v_pins_t tft_pins =
@@ -62,82 +69,173 @@ const mtb_st7789v_pins_t tft_pins =
     .rst  = CY8CKIT_028_TFT_PIN_DISPLAY_RST
 };
 
+typedef struct {
+    bool (*precheck)(void);   // return true if you can come to this screen
+    void (*init)(void);       // draw the initial stuff
+    void (*update)(void);     // update the data
+    bool (*sequence)(void);   // sequence the data .. return true if you should go to the next screen
+    dm_screenName_t next;
+} dm_screenMgmt_t;
+
+dm_screenMgmt_t screenList[] = {
+    {dm_displayScreenSplashPre, dm_displayScreenSplashInit, dm_displayScreenSplashUpdate, dm_displayScreenSplashSeq, TABLE},
+    {dm_displayScreenTablePre , dm_displayScreenTableInit, dm_displayScreenTableUpdate, dm_displayScreenTableSeq, SINGLE},
+    {dm_displaySinglePre, dm_displaySingleInit, dm_displaySingleUpdate, dm_displaySingleSeq, TABLE},
+};
+
 void dm_task(void *arg)
 {
-    dataQueue = xQueueCreate(10,sizeof(tdm_dataRsp_t));
-    actionQueue = xQueueCreate(10,sizeof(dm_action_msg_t));
+    dm_dataQueue = xQueueCreate(10,sizeof(tdm_dataRsp_t));
+    dm_cmdQueue = xQueueCreate(10,sizeof(dm_cmdMsg_t));
+
+    dm_cmdMsg_t msg;
 
     /* Initialize the display controller */
     mtb_st7789v_init8(&tft_pins);
     GUI_Init();
-    printf("X=%d Y=%d\n",GUI_GetScreenSizeX(),GUI_GetScreenSizeY());
 
-    currentScreen = screen_splash;
-    displayScreenSplash();
-    displayScreenTableInit();
+    dm_currentScreen = SPLASH;
+
+    dm_displayScreenSplashInit();
+    dm_displayScreenSplashUpdate();
+
     for(;;)
     {
-        vTaskDelay(5000);
-        displayScreenTableUpdate();
+        if(xQueueReceive(dm_cmdQueue,&msg,5000) == pdPASS) // Got a command
+        {
+            switch(msg.cmd)
+            {
+                case SCREEN_NEXT:
+                dm_nextScreen();
+                break;
 
+            }
+
+        }
+        else // otherwise just update the screen
+        {
+            (*screenList[dm_currentScreen].update)();
+        }
     }
 }
 
+
+static void dm_nextScreen()
+{
+    if((*screenList[dm_currentScreen].sequence)())
+    {
+        if((*screenList[screenList[dm_currentScreen].next].precheck)())
+        {
+            dm_currentScreen = screenList[dm_currentScreen].next;
+            (*screenList[dm_currentScreen].init)();
+        }
+    }
+    (*screenList[dm_currentScreen].update)();
+}
+
+
+
 /////////////// Views ////////////////////
 
+#define TOP_MARGIN (4)
+#define LINE_MARGIN (2)
+#define ROW_Y(row) (TOP_MARGIN + (row)*(LINE_MARGIN+GUI_GetFontSizeY()))
 
-void displayScreenSplash()
+#define CENTER_X (160)
+#define CENTER_Y (120)
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Splash
+// 
+////////////////////////////////////////////////////////////////////////////////
+
+#define SPLASH_FONT (GUI_FONT_32B_ASCII)
+#define SPLASH_FGCOLOR (GUI_RED)
+#define SPLASH_BGCOLOR (GUI_BLACK)
+
+
+static bool dm_displayScreenSplashPre()
+{
+    return true;
+}
+
+static void dm_displayScreenSplashInit()
 {
     printf("Splash\n");
+    GUI_SetColor(SPLASH_FGCOLOR);
+    GUI_SetBkColor(SPLASH_BGCOLOR);
+    GUI_SetFont(SPLASH_FONT);
+    GUI_Clear();
+
+}
+static void dm_displayScreenSplashUpdate()
+{
+    GUI_DispStringHCenterAt("Tilt Hydrometer",CENTER_X,50);
+    GUI_DispStringHCenterAt("IoT Expert",CENTER_X,100);
 
 }
 
-            
+static bool dm_displayScreenSplashSeq()
+{
+    return true;
+}
 
 
-#define NAME_LEFT_X (0)
-#define GRAV_LEFT_X (120)
-#define TEMP_LEFT_X (220)
+////////////////////////////////////////////////////////////////////////////////
+//
+// Table
+// 
+////////////////////////////////////////////////////////////////////////////////
 
-#define NAME_RIGHT_X (119)
-#define GRAV_RIGHT_X (219)
-#define TEMP_RIGHT_X (319)
+#define TABLE_FONT (GUI_FONT_24B_ASCII)
+#define TABLE_BGCOLOR (GUI_BLACK)
+#define TABLE_HEAD_BGCOLOR (GUI_WHITE)
+
+#define TABLE_NAME_LEFT_X (0)
+#define TABLE_GRAV_LEFT_X (120)
+#define TABLE_TEMP_LEFT_X (220)
+
+#define TABLE_NAME_RIGHT_X (119)
+#define TABLE_GRAV_RIGHT_X (219)
+#define TABLE_TEMP_RIGHT_X (319)
+
+#define TABLE_NAME_CENTER_X (TABLE_NAME_LEFT_X+(TABLE_NAME_RIGHT_X-TABLE_NAME_LEFT_X)/2)
+#define TABLE_GRAV_CENTER_X (TABLE_GRAV_LEFT_X+(TABLE_GRAV_RIGHT_X-TABLE_GRAV_LEFT_X)/2)
+#define TABLE_TEMP_CENTER_X (TABLE_TEMP_LEFT_X+(TABLE_TEMP_RIGHT_X-TABLE_TEMP_LEFT_X)/2)
 
 
 
-#define NAME_CENTER_X (NAME_LEFT_X+(NAME_RIGHT_X-NAME_LEFT_X)/2)
-#define GRAV_CENTER_X (GRAV_LEFT_X+(GRAV_RIGHT_X-GRAV_LEFT_X)/2)
-#define TEMP_CENTER_X (TEMP_LEFT_X+(TEMP_RIGHT_X-TEMP_LEFT_X)/2)
+static bool dm_displayScreenTablePre()
+{
+    return true;
+}
 
-#define TOP_MARGIN 4
-#define LINE_MARGIN 2
 
-#define ROW_Y(row) (TOP_MARGIN + row*(LINE_MARGIN+GUI_GetFontSizeY()))
-
-void displayScreenTableInit()
+static void dm_displayScreenTableInit()
 {
 
-    GUI_SetColor(GUI_WHITE);
-    GUI_SetBkColor(GUI_BLACK);
-    GUI_SetFont(GUI_FONT_24B_ASCII);
+    GUI_SetColor(TABLE_HEAD_BGCOLOR);
+    GUI_SetBkColor(TABLE_BGCOLOR);
+    GUI_SetFont(TABLE_FONT);
     GUI_Clear();
 
     GUI_FillRect(0,0,320,GUI_GetFontSizeY()+ TOP_MARGIN);
 
     GUI_SetTextMode(GUI_TM_REV);
     GUI_SetTextAlign(GUI_TA_CENTER);
-    GUI_DispStringHCenterAt("Name",NAME_CENTER_X,TOP_MARGIN);
-    GUI_DispStringHCenterAt("Gravity",GRAV_CENTER_X,TOP_MARGIN);
-    GUI_DispStringHCenterAt("Temp",TEMP_CENTER_X,TOP_MARGIN);
+    GUI_DispStringHCenterAt("Name",TABLE_NAME_CENTER_X,TOP_MARGIN);
+    GUI_DispStringHCenterAt("Gravity",TABLE_GRAV_CENTER_X,TOP_MARGIN);
+    GUI_DispStringHCenterAt("Temp",TABLE_TEMP_CENTER_X,TOP_MARGIN);
 
-    GUI_DrawLine(NAME_RIGHT_X,0,NAME_RIGHT_X,240);
-    GUI_DrawLine(GRAV_RIGHT_X,0,GRAV_RIGHT_X,240);
-    
+    GUI_DrawLine(TABLE_NAME_RIGHT_X,0,TABLE_NAME_RIGHT_X,240);
+    GUI_DrawLine(TABLE_GRAV_RIGHT_X,0,TABLE_GRAV_RIGHT_X,240);
 
 }
 
-
-void displayScreenTableUpdate()
+static void dm_displayScreenTableUpdate()
 {
     tdm_dataRsp_t myResponse;
 
@@ -145,46 +243,192 @@ void displayScreenTableUpdate()
 
     char buff[64];
     
-    GUI_SetColor(GUI_WHITE);
-    GUI_SetBkColor(GUI_BLACK);
+    GUI_SetColor(TABLE_HEAD_BGCOLOR);
+    GUI_SetBkColor(TABLE_BGCOLOR);
     
-    GUI_SetFont(GUI_FONT_24B_ASCII);
+    GUI_SetFont(TABLE_FONT);
     GUI_SetTextMode(GUI_TEXTMODE_NORMAL);
     GUI_SetTextAlign(GUI_TA_CENTER);
 
-    int row=1;
-
+    int row;
     for(int i=0;i<tdm_getNumTilt();i++)
     {
+        row = i+1;
+
+        GUI_SetColor(tdm_colorGUI(i));
+        GUI_DispStringHCenterAt(tdm_colorString(i), TABLE_NAME_CENTER_X, ROW_Y(row));
+
         if(1<<i & activeTilts)
         {
-             tdm_submitGetDataCopy(i,dataQueue);
-            xQueueReceive(dataQueue,&myResponse,portMAX_DELAY);
+            tdm_submitGetDataCopy(i,dm_dataQueue);
+            xQueueReceive(dm_dataQueue,&myResponse,portMAX_DELAY);
 
-            GUI_SetColor(tdm_colorGUI(i));
-
-            GUI_DispStringHCenterAt(tdm_colorString(i), NAME_CENTER_X, ROW_Y(row));
             sprintf(buff,"%1.3f",myResponse.response->gravity);
-            GUI_DispStringHCenterAt(buff, GRAV_CENTER_X, ROW_Y(row));
+            GUI_DispStringHCenterAt(buff, TABLE_GRAV_CENTER_X, ROW_Y(row));
             sprintf(buff,"%02d",myResponse.response->temperature);
-            GUI_DispStringHCenterAt(buff, TEMP_CENTER_X, ROW_Y(row));
-            
-            
-            row = row + 1;
-
-#if 0
-            printf("Tilt %d Gravity=%f T=%d Time=%ld RSSI=%d txPower=%d\n",
-                i,
-                myResponse.response->gravity,
-                myResponse.response->temperature,
-                myResponse.response->time,
-                myResponse.response->rssi,
-                myResponse.response->txPower
-                );
-#endif
+            GUI_DispStringHCenterAt(buff, TABLE_TEMP_CENTER_X, ROW_Y(row));
+                        
             free(myResponse.response);
+        }
+        else
+        {
+            GUI_DispStringHCenterAt("-----", TABLE_GRAV_CENTER_X, ROW_Y(row));
+            GUI_DispStringHCenterAt("--", TABLE_TEMP_CENTER_X, ROW_Y(row));
+
         }
     }
   
 }
 
+static bool dm_displayScreenTableSeq()
+{
+    return true;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Single
+// 
+////////////////////////////////////////////////////////////////////////////////
+
+#define SINGLE_FONT (GUI_FONT_32B_ASCII)
+#define SINGLE_BGCOLOR (GUI_BLACK)
+#define SINGLE_LABEL_X (160)
+#define SINGLE_VALUE_X (SINGLE_LABEL_X + 10)
+
+#define SINGLE_GRAV_ROW (2)
+#define SINGLE_TEMP_ROW (3)
+#define SINGLE_TXPOWER_ROW (4)
+#define SINGLE_RSSI_ROW (5)
+#define SINGLE_TIME_ROW (6)
+
+
+tdm_tiltHandle_t currentSingle = 0xFF;
+
+static bool dm_displaySinglePre()
+{
+    uint32_t activeTilts =tdm_getActiveTiltMask();
+    if(activeTilts == 0)
+        return false;
+
+    for(int i=0;i<tdm_getNumTilt();i++)
+    {
+        if(1<<i & activeTilts)
+        {
+            currentSingle = i;
+            break;
+        }
+    }
+
+    return true;
+}
+
+static void dm_displaySingleInit()
+{
+    GUI_SetBkColor(GUI_BLACK);
+    GUI_SetFont(GUI_FONT_32B_ASCII);
+    GUI_Clear();
+
+    GUI_SetColor(tdm_colorGUI(currentSingle));
+    
+    GUI_DispStringHCenterAt(tdm_colorString(currentSingle), CENTER_X,ROW_Y(0) );
+    
+    GUI_SetTextAlign(GUI_TA_RIGHT | GUI_TA_VCENTER);
+
+    GUI_DispStringAt("Gravity: ", SINGLE_LABEL_X,ROW_Y(SINGLE_GRAV_ROW) );
+    GUI_SetTextAlign(GUI_TA_RIGHT | GUI_TA_VCENTER);
+    GUI_DispStringAt("Temp: ",    SINGLE_LABEL_X,ROW_Y(SINGLE_TEMP_ROW) );
+    GUI_SetTextAlign(GUI_TA_RIGHT | GUI_TA_VCENTER);
+    GUI_DispStringAt("TxPower: ", SINGLE_LABEL_X,ROW_Y(SINGLE_TXPOWER_ROW) );
+    GUI_SetTextAlign(GUI_TA_RIGHT | GUI_TA_VCENTER);
+    GUI_DispStringAt("RSSI: ",    SINGLE_LABEL_X,ROW_Y(SINGLE_RSSI_ROW) );
+    GUI_SetTextAlign(GUI_TA_RIGHT | GUI_TA_VCENTER);
+    GUI_DispStringAt("Time: ",    SINGLE_LABEL_X,ROW_Y(SINGLE_TIME_ROW) );
+
+}
+
+static void dm_displaySingleUpdate()
+{
+
+    tdm_dataRsp_t myResponse;
+    uint32_t activeTilts =tdm_getActiveTiltMask();
+
+    char gravString[10];
+    char tempString[10];
+    char txPowerString[10];
+    char rssiString[10];
+    char timeString[10];
+    
+    
+    GUI_SetBkColor(GUI_BLACK);
+    GUI_SetFont(GUI_FONT_32B_ASCII);
+
+
+    GUI_SetColor(tdm_colorGUI(currentSingle));
+    
+    if(1<<currentSingle & activeTilts)
+    {
+        tdm_submitGetDataCopy(currentSingle,dm_dataQueue);
+        xQueueReceive(dm_dataQueue,&myResponse,portMAX_DELAY);
+        sprintf(gravString,"%1.3f",myResponse.response->gravity);
+        sprintf(tempString,"%02d",myResponse.response->temperature);
+        sprintf(txPowerString,"%d",myResponse.response->txPower);
+        sprintf(rssiString,"%2d",myResponse.response->rssi);
+        sprintf(timeString,"%d",(int)myResponse.response->time);                       
+        free(myResponse.response);
+    }
+
+    else
+    {
+        sprintf(gravString,"-----");
+        sprintf(tempString,"--");
+        sprintf(txPowerString,"---");
+        sprintf(rssiString,"--");
+        sprintf(timeString,"---");                       
+    }
+
+    GUI_DispStringAtCEOL(gravString, SINGLE_VALUE_X,ROW_Y(SINGLE_GRAV_ROW) );
+    GUI_SetTextAlign(GUI_TA_LEFT | GUI_TA_VCENTER);
+    GUI_DispStringAtCEOL(tempString,    SINGLE_VALUE_X,ROW_Y(SINGLE_TEMP_ROW) );
+    GUI_SetTextAlign(GUI_TA_LEFT | GUI_TA_VCENTER);
+    GUI_DispStringAtCEOL(txPowerString, SINGLE_VALUE_X,ROW_Y(SINGLE_TXPOWER_ROW) );
+    GUI_SetTextAlign(GUI_TA_LEFT | GUI_TA_VCENTER);
+    GUI_DispStringAtCEOL(rssiString,    SINGLE_VALUE_X,ROW_Y(SINGLE_RSSI_ROW) );
+    GUI_SetTextAlign(GUI_TA_LEFT | GUI_TA_VCENTER);
+    GUI_DispStringAtCEOL(timeString,    SINGLE_VALUE_X,ROW_Y(SINGLE_TIME_ROW) );
+}
+
+static bool dm_displaySingleSeq()
+{
+    uint32_t activeTilts =tdm_getActiveTiltMask();
+    if(activeTilts == 0)
+        return true;
+
+    for(int i=currentSingle+1;i<tdm_getNumTilt();i++)
+    {
+        if(1<<i & activeTilts)
+        {
+            currentSingle = i;
+            dm_displaySingleInit();
+            return false;
+        }
+    }
+    return true;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// commands
+//
+////////////////////////////////////////////////////////////////////////////////
+
+void dm_submitNextScreenCmd()
+{
+    dm_cmdMsg_t msg;
+    msg.cmd = SCREEN_NEXT;
+    xQueueSend(dm_cmdQueue,&msg,0);
+
+}

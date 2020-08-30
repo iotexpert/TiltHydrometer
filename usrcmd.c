@@ -32,6 +32,8 @@
 
 
 
+#include <stdlib.h>
+
 #include "ntopt.h"
 #include "ntlibc.h"
 #include "ntshell.h"
@@ -39,7 +41,7 @@
 #include <stdio.h>
 #include "bluetoothManager.h"
 #include "tiltDataManager.h"
-#include <stdlib.h>
+#include "displayManager.h"
 
 
 typedef int (*USRCMDFUNC)(int argc, char **argv);
@@ -51,6 +53,8 @@ static int usrcmd_clear(int argc, char **argv);
 static int usrcmd_printargs(int argc, char **argv);
 static int usrcmd_newData(int argc,char **argv);
 static int usrcmd_initData(int argc,char **argv);
+
+static int usrcmd_nextScreen(int argc,char **argv);
 
 
 typedef struct {
@@ -66,6 +70,7 @@ static const cmd_table_t cmdlist[] = {
     { "printargs","print the list of arguments", usrcmd_printargs},
     { "nd","inject new data tilt# gravity temp", usrcmd_newData},
     { "id","init data for all tilts", usrcmd_initData},
+    { "ns","next screen", usrcmd_nextScreen},
 
 };
 
@@ -180,3 +185,10 @@ static int usrcmd_initData(int argc,char **argv)
     }
     return 0;
 }
+
+static int usrcmd_nextScreen(int argc,char **argv)
+{
+    dm_submitNextScreenCmd();
+    return 0;
+}
+
