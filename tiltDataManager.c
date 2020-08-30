@@ -1,4 +1,3 @@
-#include "tiltDataManager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "string.h"
@@ -11,10 +10,7 @@
 #include "task.h"
 #include "queue.h"
 
-void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data);
-tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle);
-
-QueueHandle_t tdm_cmdQueue;
+#include "tiltDataManager.h"
 
 typedef enum {
     ADD_DATA_POINT,
@@ -26,6 +22,64 @@ typedef struct {
     tdm_tiltHandle_t tilt;
     void *msg;
 } tdm_cmdMsg_t;
+
+
+
+typedef struct  {
+    char *colorName;
+    GUI_COLOR color;
+    uint8_t uuid[20];
+    tdm_tiltData_t *data;
+    int numDataPoints;
+    int numDataSeen;
+} tilt_t;
+
+
+static QueueHandle_t tdm_cmdQueue;
+
+#define IBEACON_HEADER 0x4C,0x00,0x02,0x15
+#define GUI_PINK GUI_MAKE_COLOR(0x00CCCCFF)
+#define GUI_PURPLE GUI_MAKE_COLOR(0x00800080)
+
+static tilt_t tiltDB [] =
+{
+    {"Red",    GUI_RED,    {IBEACON_HEADER,0xA4,0x95,0xBB,0x10,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+    {"Green" , GUI_GREEN,  {IBEACON_HEADER,0xA4,0x95,0xBB,0x20,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+    {"Black" , GUI_GRAY,   {IBEACON_HEADER,0xA4,0x95,0xBB,0x30,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+    {"Purple", GUI_PURPLE, {IBEACON_HEADER,0xA4,0x95,0xBB,0x40,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+    {"Orange", GUI_ORANGE, {IBEACON_HEADER,0xA4,0x95,0xBB,0x50,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+    {"Blue"  , GUI_BLUE,   {IBEACON_HEADER,0xA4,0x95,0xBB,0x60,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+    {"Yellow", GUI_YELLOW, {IBEACON_HEADER,0xA4,0x95,0xBB,0x70,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+    {"Pink"  , GUI_PINK,   {IBEACON_HEADER,0xA4,0x95,0xBB,0x80,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
+};
+#define NUM_TILT (sizeof(tiltDB)/sizeof(tilt_t))
+
+
+static void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data)
+{
+    if(tiltDB[handle].data != 0)
+    {
+        free(tiltDB[handle].data);
+    }
+    tiltDB[handle].data = data; 
+    tiltDB[handle].numDataSeen += 1;
+    tiltDB[handle].numDataPoints = 1;
+}
+
+static tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle)
+{
+    tdm_tiltData_t *dp;
+    dp = malloc(sizeof(tdm_tiltData_t));
+    memcpy(dp,tiltDB[handle].data,sizeof(tdm_tiltData_t));
+    return dp;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Public Functions
+// 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void tdm_task(void *arg)
@@ -50,38 +104,6 @@ void tdm_task(void *arg)
         }
     }
 }
-
-
-
-typedef struct  {
-    char *colorName;
-    GUI_COLOR color;
-    uint8_t uuid[20];
-    tdm_tiltData_t *data;
-    int numDataPoints;
-    int numDataSeen;
-} tilt_t;
-
-
-#define IBEACON_HEADER 0x4C,0x00,0x02,0x15
-
-#define GUI_PINK GUI_MAKE_COLOR(0x00CCCCFF)
-#define GUI_PURPLE GUI_MAKE_COLOR(0x00800080)
-
-static tilt_t tiltDB [] =
-{
-    {"Red",    GUI_RED,    {IBEACON_HEADER,0xA4,0x95,0xBB,0x10,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-    {"Green" , GUI_GREEN,  {IBEACON_HEADER,0xA4,0x95,0xBB,0x20,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-    {"Black" , GUI_GRAY,   {IBEACON_HEADER,0xA4,0x95,0xBB,0x30,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-    {"Purple", GUI_PURPLE, {IBEACON_HEADER,0xA4,0x95,0xBB,0x40,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-    {"Orange", GUI_ORANGE, {IBEACON_HEADER,0xA4,0x95,0xBB,0x50,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-    {"Blue"  , GUI_BLUE,   {IBEACON_HEADER,0xA4,0x95,0xBB,0x60,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-    {"Yellow", GUI_YELLOW, {IBEACON_HEADER,0xA4,0x95,0xBB,0x70,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-    {"Pink"  , GUI_PINK,   {IBEACON_HEADER,0xA4,0x95,0xBB,0x80,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
-};
-
-#define NUM_TILT (sizeof(tiltDB)/sizeof(tilt_t))
-
 
 //
 // Should I reall compare all of this data every time?
@@ -115,10 +137,10 @@ void tdm_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_t
                 tdm_submitNewData(i,data);
 
             }
-
         }
     }
 }
+
 
 char *tdm_colorString(tdm_tiltHandle_t handle)
 {
@@ -128,17 +150,6 @@ char *tdm_colorString(tdm_tiltHandle_t handle)
 GUI_COLOR tdm_colorGUI(tdm_tiltHandle_t handle)
 {
     return tiltDB[handle].color;
-}
-
-void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data)
-{
-    if(tiltDB[handle].data != 0)
-    {
-        free(tiltDB[handle].data);
-    }
-    tiltDB[handle].data = data; 
-    tiltDB[handle].numDataSeen += 1;
-    tiltDB[handle].numDataPoints = 1;
 }
 
 int tdm_getNumTilt()
@@ -156,16 +167,6 @@ uint32_t tdm_getActiveTiltMask()
     }
     return mask;
 }
-
-tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle)
-{
-    tdm_tiltData_t *dp;
-    dp = malloc(sizeof(tdm_tiltData_t));
-    memcpy(dp,tiltDB[handle].data,sizeof(tdm_tiltData_t));
-    return dp;
-
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -198,4 +199,3 @@ void  tdm_submitGetDataCopy(tdm_tiltHandle_t handle,QueueHandle_t queue)
     }
 
 }
-

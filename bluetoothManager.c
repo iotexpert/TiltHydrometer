@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "bluetoothApp.h"
+#include "bluetoothManager.h"
 #include "wiced_bt_stack.h"
 #include "app_bt_cfg.h"
 #include "wiced_bt_dev.h"
@@ -19,9 +19,19 @@
 #include "btutil.h"
 #include "tiltDataManager.h"
 
-QueueHandle_t bluetoothAppQueueHandle;
+QueueHandle_t btm_cmdQueue;
 
-void adv_scan_result_cback(wiced_bt_ble_scan_results_t *p_scan_result, uint8_t *p_adv_data )
+typedef enum {
+	BTA_NONE,
+} btm_cmd_t;
+
+typedef struct {
+	btm_cmd_t cmd;
+
+} btm_cmdMsg_t;
+
+
+static void btm_advScanResultCback(wiced_bt_ble_scan_results_t *p_scan_result, uint8_t *p_adv_data )
 {
 	if (p_scan_result == 0)
 		return;
@@ -35,30 +45,27 @@ void adv_scan_result_cback(wiced_bt_ble_scan_results_t *p_scan_result, uint8_t *
 		tdm_processIbeacon(mfgFieldData,mfgFieldLen,p_scan_result);
 }
 
-void processBluetoothAppQueue(TimerHandle_t xTimer)
+/// Currently never called
+static void btm_processCmdQueue(TimerHandle_t xTimer)
 {
-	bluetoothAppMsg_t msg;
+	btm_cmdMsg_t msg;
+	BaseType_t rval;
 
-	 BaseType_t rval;
-
-	 rval = xQueueReceive( bluetoothAppQueueHandle,&msg,0);
-	 if(rval == pdTRUE)
-	 {
-		 switch(msg.cmd)
-		 {
-		 case BTA_PRINT_TABLE:
-			//  dumpTable();
-			 break;
-		case BTA_PRINT_TABLEFILTER:
-			//  dumpTableFilter();
-			 break;
+	rval = xQueueReceive( btm_cmdQueue,&msg,0);
+	if(rval == pdTRUE)
+	{
+		switch(msg.cmd)
+		{
+			case BTA_NONE:
+		 	printf("BTA recievec command BTA_NONE\n");
+			break;
 		 }
 	 }
 }
 
 
 /**************************************************************************************************
-* Function Name: app_bt_management_callback()
+* Function Name: btm_bteManagementCallback()
 ***************************************************************************************************
 * Summary:
 *   This is a Bluetooth stack event handler function to receive management events from
@@ -72,7 +79,7 @@ void processBluetoothAppQueue(TimerHandle_t xTimer)
 *  wiced_result_t: Error code from WICED_RESULT_LIST or BT_RESULT_LIST
 *
 *************************************************************************************************/
-wiced_result_t app_bt_management_callback(wiced_bt_management_evt_t event, wiced_bt_management_evt_data_t *p_event_data)
+wiced_result_t btm_bteManagementCallback(wiced_bt_management_evt_t event, wiced_bt_management_evt_data_t *p_event_data)
 {
     wiced_result_t result = WICED_BT_SUCCESS;
 
@@ -83,7 +90,7 @@ wiced_result_t app_bt_management_callback(wiced_bt_management_evt_t event, wiced
 
             if (WICED_BT_SUCCESS == p_event_data->enabled.status)
             {
-				wiced_bt_ble_observe (WICED_TRUE, 0,adv_scan_result_cback);
+				wiced_bt_ble_observe(WICED_TRUE, 0,btm_advScanResultCback);
             }
             else
             {
@@ -99,20 +106,3 @@ wiced_result_t app_bt_management_callback(wiced_bt_management_evt_t event, wiced
 
     return result;
 }
-
-
-void btapp_printTable()
-{
-	bluetoothAppMsg_t msg;
-	msg.cmd = BTA_PRINT_TABLE;
-	xQueueSend(bluetoothAppQueueHandle, &msg,0);
-}
-
-
-void btapp_printTableFilter()
-{
-	bluetoothAppMsg_t msg;
-	msg.cmd = BTA_PRINT_TABLEFILTER;
-	xQueueSend(bluetoothAppQueueHandle, &msg,0);
-}
-

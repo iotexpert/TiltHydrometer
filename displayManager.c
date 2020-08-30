@@ -10,8 +10,25 @@
 #include "queue.h"
 
 #include "cy8ckit_028_tft_pins.h"
-#include "displayThread.h"
+#include "displayManager.h"
 #include "tiltDataManager.h"
+
+
+typedef enum {
+    display_refresh,
+
+} dm_action_t;
+
+typedef struct {
+    dm_action_t action;
+} dm_action_msg_t;
+
+
+typedef enum {
+    screen_splash,
+    screen_table,
+    screen_single,
+} display_screen_name_t;
 
 static QueueHandle_t dataQueue;
 
@@ -45,7 +62,7 @@ const mtb_st7789v_pins_t tft_pins =
     .rst  = CY8CKIT_028_TFT_PIN_DISPLAY_RST
 };
 
-void displayThread(void *arg)
+void dm_task(void *arg)
 {
     dataQueue = xQueueCreate(10,sizeof(tdm_dataRsp_t));
     actionQueue = xQueueCreate(10,sizeof(dm_action_msg_t));

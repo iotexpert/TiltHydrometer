@@ -1,3 +1,6 @@
-#include "FreeRTOS.h"
+#include "ntshell.h"
+#include "ntlibc.h"
+#include "psoc6_ntshell_port.h"
 
-extern TaskHandle_t blinkTaskHandle;
+
+extern ntshell_t nts_shell;

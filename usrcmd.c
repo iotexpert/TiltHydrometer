@@ -35,12 +35,12 @@
 #include "ntopt.h"
 #include "ntlibc.h"
 #include "ntshell.h"
+#include "global.h"
 #include <stdio.h>
-#include "bluetoothApp.h"
+#include "bluetoothManager.h"
 #include "tiltDataManager.h"
 #include <stdlib.h>
 
-extern ntshell_t ntshell;
 
 typedef int (*USRCMDFUNC)(int argc, char **argv);
 
@@ -126,7 +126,7 @@ static int usrcmd_info(int argc, char **argv)
 
 static int usrcmd_clear(int argc, char **argv)
 {
-    vtsend_erase_display_home(&ntshell.vtsend);
+    vtsend_erase_display_home(&nts_shell.vtsend);
     return 0;
 }
 
