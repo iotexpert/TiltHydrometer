@@ -332,6 +332,8 @@ static void dm_displaySingleInit()
 
     GUI_SetColor(tdm_colorGUI(currentSingle));
     
+    GUI_SetTextAlign(GUI_TA_LEFT);
+    
     GUI_DispStringHCenterAt(tdm_colorString(currentSingle), CENTER_X,ROW_Y(0) );
     
     GUI_SetTextAlign(GUI_TA_RIGHT | GUI_TA_VCENTER);
