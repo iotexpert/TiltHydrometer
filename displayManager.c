@@ -14,7 +14,9 @@
 
 
 typedef enum {
-    SCREEN_NEXT,
+    SCREEN_NEXT,  // Move to next screen
+    SCREEN_AUTO,  // Toggle the automatic mode
+    SCREEN_TABLE, // Change screen to table
 
 } dm_cmd_t;
 
@@ -85,10 +87,14 @@ dm_screenMgmt_t screenList[] = {
 
 void dm_task(void *arg)
 {
+
+    bool autoRotate=true;
+
     dm_dataQueue = xQueueCreate(10,sizeof(tdm_dataRsp_t));
     dm_cmdQueue = xQueueCreate(10,sizeof(dm_cmdMsg_t));
 
     dm_cmdMsg_t msg;
+
 
     /* Initialize the display controller */
     mtb_st7789v_init8(&tft_pins);
@@ -108,13 +114,25 @@ void dm_task(void *arg)
                 case SCREEN_NEXT:
                 dm_nextScreen();
                 break;
+                case SCREEN_AUTO:
+                autoRotate = ! autoRotate;
+                printf("AutoRotate =%s\n",autoRotate?"True":"False");
+                break;
+                case SCREEN_TABLE:
+                dm_currentScreen = TABLE;
+                (*screenList[dm_currentScreen].init)();
+                (*screenList[dm_currentScreen].update)();
+                break;
 
             }
 
         }
         else // otherwise just update the screen
         {
-            (*screenList[dm_currentScreen].update)();
+            if(autoRotate)
+                dm_nextScreen();
+            else
+                (*screenList[dm_currentScreen].update)();
         }
     }
 }
@@ -331,11 +349,14 @@ static void dm_displaySingleInit()
     GUI_Clear();
 
     GUI_SetColor(tdm_colorGUI(currentSingle));
+
+    GUI_FillRect(0,0,320,ROW_Y(1));
     
     GUI_SetTextAlign(GUI_TA_LEFT);
-    
+    GUI_SetTextMode(GUI_TM_REV);
     GUI_DispStringHCenterAt(tdm_colorString(currentSingle), CENTER_X,ROW_Y(0) );
-    
+
+    GUI_SetTextMode(GUI_TM_NORMAL);
     GUI_SetTextAlign(GUI_TA_RIGHT | GUI_TA_VCENTER);
 
     GUI_DispStringAt("Gravity: ", SINGLE_LABEL_X,ROW_Y(SINGLE_GRAV_ROW) );
@@ -360,7 +381,7 @@ static void dm_displaySingleUpdate()
     char tempString[10];
     char txPowerString[10];
     char rssiString[10];
-    char timeString[10];
+    char timeString[64];
     
     
     GUI_SetBkColor(GUI_BLACK);
@@ -371,13 +392,25 @@ static void dm_displaySingleUpdate()
     
     if(1<<currentSingle & activeTilts)
     {
+        
         tdm_submitGetDataCopy(currentSingle,dm_dataQueue);
         xQueueReceive(dm_dataQueue,&myResponse,portMAX_DELAY);
         sprintf(gravString,"%1.3f",myResponse.response->gravity);
         sprintf(tempString,"%02d",myResponse.response->temperature);
         sprintf(txPowerString,"%d",myResponse.response->txPower);
         sprintf(rssiString,"%2d",myResponse.response->rssi);
-        sprintf(timeString,"%d",(int)myResponse.response->time);                       
+
+        int seconds = (xTaskGetTickCount()/1000- myResponse.response->time);
+        int days = seconds/(24*60*60);
+        seconds = seconds - days*(24*60*60);
+        int hours = seconds/(60*60);
+        seconds = seconds - hours*(60*60);
+        int minutes = seconds/60;
+        seconds = seconds - (minutes * 60);
+        
+        sprintf(timeString,"%02d:%02d:%02d:%02d",days,hours,minutes,seconds);                       
+                     
+
         free(myResponse.response);
     }
 
@@ -431,6 +464,22 @@ void dm_submitNextScreenCmd()
 {
     dm_cmdMsg_t msg;
     msg.cmd = SCREEN_NEXT;
+    xQueueSend(dm_cmdQueue,&msg,0);
+
+}
+
+void dm_submitAutoCmd()
+{
+    dm_cmdMsg_t msg;
+    msg.cmd = SCREEN_AUTO;
+    xQueueSend(dm_cmdQueue,&msg,0);
+
+}
+
+void dm_submitTable()
+{
+    dm_cmdMsg_t msg;
+    msg.cmd = SCREEN_TABLE;
     xQueueSend(dm_cmdQueue,&msg,0);
 
 }

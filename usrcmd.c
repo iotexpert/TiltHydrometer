@@ -42,6 +42,8 @@
 #include "bluetoothManager.h"
 #include "tiltDataManager.h"
 #include "displayManager.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 typedef int (*USRCMDFUNC)(int argc, char **argv);
@@ -55,6 +57,8 @@ static int usrcmd_newData(int argc,char **argv);
 static int usrcmd_initData(int argc,char **argv);
 
 static int usrcmd_nextScreen(int argc,char **argv);
+static int usrcmd_autoRotate(int argc,char **argv);
+static int usrcmd_table(int argc,char **argv);
 
 
 typedef struct {
@@ -71,6 +75,8 @@ static const cmd_table_t cmdlist[] = {
     { "nd","inject new data tilt# gravity temp", usrcmd_newData},
     { "id","init data for all tilts", usrcmd_initData},
     { "ns","next screen", usrcmd_nextScreen},
+    { "auto","Toggle Screen Auto Rotate", usrcmd_autoRotate},
+    { "table","Move to table screen", usrcmd_table},
 
 };
 
@@ -152,16 +158,26 @@ static int usrcmd_newData(int argc,char **argv)
 {
     int tilt;
 
-    if(argc == 4)
+    if(argc == 6)
     {
+        int txp;
+        int rs;
+
         tdm_tiltData_t *newData = malloc(sizeof(tdm_tiltData_t));
         sscanf(argv[1],"%d",&tilt);
         sscanf(argv[2],"%f",&newData->gravity);
         sscanf(argv[3],"%d",&newData->temperature);
-        newData->rssi = 11;
-        newData->txPower = 23;
-    
-        printf("Num = %d tilt=%d gravity=%f temperature=%d\n",argc,tilt,newData->gravity,newData->temperature);
+        sscanf(argv[4],"%d",&txp);
+        sscanf(argv[5],"%d",&rs);
+        
+        newData->txPower = txp;
+        newData->rssi = rs;
+
+        newData->time = xTaskGetTickCount() / 1000;
+
+        printf("Num = %d tilt=%d gravity=%f temperature=%d txPower=%d rssi=%d\n",argc,tilt,newData->gravity,
+                    newData->temperature,newData->txPower,newData->rssi);
+
         tdm_submitNewData(tilt,newData);
     }
     return 0;
@@ -178,9 +194,10 @@ static int usrcmd_initData(int argc,char **argv)
         
         newData->gravity = 1.0 + (.001*(float)(i+1));
         newData->temperature = 11*(i+1);
-
         newData->rssi = 11*i;
         newData->txPower = 22;
+        newData->time = xTaskGetTickCount() / 1000;
+
         tdm_submitNewData(i,newData);
     }
     return 0;
@@ -192,3 +209,14 @@ static int usrcmd_nextScreen(int argc,char **argv)
     return 0;
 }
 
+static int usrcmd_autoRotate(int argc,char **argv)
+{
+    dm_submitAutoCmd();
+    return 0;
+}
+
+static int usrcmd_table(int argc,char **argv)
+{
+    dm_submitTable();
+    return 0;
+}
