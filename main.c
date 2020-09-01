@@ -19,6 +19,7 @@
 #include "ntlibc.h"
 #include "psoc6_ntshell_port.h"
 
+#include "capsenseManager.h"
 volatile int uxTopUsedPriority ;
 
 ntshell_t nts_shell;
@@ -70,6 +71,7 @@ int main(void)
     xTaskCreate(nts_task, "NT Shell", configMINIMAL_STACK_SIZE*4,0 /* args */ ,0 /* priority */, 0);
     xTaskCreate(dm_task, "Display Manager", configMINIMAL_STACK_SIZE*3,0 /* args */ ,0 /* priority */, 0);
     xTaskCreate(tdm_task, "Tile Data Manager", configMINIMAL_STACK_SIZE*2,0 /* args */ ,0 /* priority */, 0);
+    xTaskCreate(cpm_task, "CapSense Manager", configMINIMAL_STACK_SIZE*4,0 /* args */ ,0 /* priority */, 0);
 
     vTaskStartScheduler();
 }

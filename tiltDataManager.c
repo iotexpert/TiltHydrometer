@@ -24,7 +24,6 @@ typedef struct {
 } tdm_cmdMsg_t;
 
 
-
 typedef struct  {
     char *colorName;
     GUI_COLOR color;
@@ -66,6 +65,8 @@ static void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data)
     tiltDB[handle].numDataPoints = 1;
 }
 
+// This function returns a malloc'd copy of the front of the most recent datapoint ... this function should only be used 
+// internally because it is not thread safe.
 static tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle)
 {
     tdm_tiltData_t *dp;
@@ -80,7 +81,6 @@ static tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle)
 // Public Functions
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 void tdm_task(void *arg)
 {
@@ -182,7 +182,7 @@ void tdm_submitNewData(tdm_tiltHandle_t handle,tdm_tiltData_t *data)
     msg.cmd =  ADD_DATA_POINT;
     if(xQueueSend(tdm_cmdQueue,&msg,0) != pdTRUE)
     {
-        printf("failed to send to dmQueue\n");
+        printf("Failed to send to dmQueue\n");
         free(data);
     }
 }
