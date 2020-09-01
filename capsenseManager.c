@@ -8,9 +8,7 @@
 
 #include "displayManager.h"
 
-// cy_stc_capsense_context_t cpm_context;
-
-SemaphoreHandle_t cpm_semaphore;
+static SemaphoreHandle_t cpm_semaphore;
 
 const cy_stc_sysint_t CapSense_ISR_cfg =
 {
@@ -48,7 +46,6 @@ void cpm_task()
     int button1Curr = 0;
     while(1)
     {
-        //printf("Started scan all widgets\n");
         Cy_CapSense_ScanAllWidgets (&cy_capsense_context);
         xSemaphoreTake(cpm_semaphore,portMAX_DELAY);
         Cy_CapSense_ProcessAllWidgets(&cy_capsense_context);
