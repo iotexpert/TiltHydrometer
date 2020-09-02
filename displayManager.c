@@ -3,7 +3,7 @@
 
 #include "GUI.h"
 #include "mtb_st7789v.h"
-#include "cy8ckit_028_tft_pins.h"
+#include "cybsp.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -53,22 +53,20 @@ static void dm_displaySingleUpdate();
 static bool dm_displaySingleSeq();
 
 
-
-/* The pins above are defined by the CY8CKIT-028-TFT library. If the display is being used on different hardware the mappings will be different. */
 const mtb_st7789v_pins_t tft_pins =
 {
-    .db08 = CY8CKIT_028_TFT_PIN_DISPLAY_DB8,
-    .db09 = CY8CKIT_028_TFT_PIN_DISPLAY_DB9,
-    .db10 = CY8CKIT_028_TFT_PIN_DISPLAY_DB10,
-    .db11 = CY8CKIT_028_TFT_PIN_DISPLAY_DB11,
-    .db12 = CY8CKIT_028_TFT_PIN_DISPLAY_DB12,
-    .db13 = CY8CKIT_028_TFT_PIN_DISPLAY_DB13,
-    .db14 = CY8CKIT_028_TFT_PIN_DISPLAY_DB14,
-    .db15 = CY8CKIT_028_TFT_PIN_DISPLAY_DB15,
-    .nrd  = CY8CKIT_028_TFT_PIN_DISPLAY_NRD,
-    .nwr  = CY8CKIT_028_TFT_PIN_DISPLAY_NWR,
-    .dc   = CY8CKIT_028_TFT_PIN_DISPLAY_DC,
-    .rst  = CY8CKIT_028_TFT_PIN_DISPLAY_RST
+    .db08 = (CYBSP_J2_2),
+    .db09 = (CYBSP_J2_4),
+    .db10 = (CYBSP_J2_6),
+    .db11 = (CYBSP_J2_10),
+    .db12 = (CYBSP_J2_12),
+    .db13 = (CYBSP_D7),
+    .db14 = (CYBSP_D8),
+    .db15 = (CYBSP_D9),
+    .nrd  = (CYBSP_D10),
+    .nwr  = (CYBSP_D11),
+    .dc   = (CYBSP_D12),
+    .rst  = (CYBSP_D13)
 };
 
 typedef struct {

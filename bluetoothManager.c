@@ -45,6 +45,7 @@ static void btm_advScanResultCback(wiced_bt_ble_scan_results_t *p_scan_result, u
 		tdm_processIbeacon(mfgFieldData,mfgFieldLen,p_scan_result);
 }
 
+#if 0
 /// Currently never called
 static void btm_processCmdQueue(TimerHandle_t xTimer)
 {
@@ -62,7 +63,7 @@ static void btm_processCmdQueue(TimerHandle_t xTimer)
 		 }
 	 }
 }
-
+#endif
 
 /**************************************************************************************************
 * Function Name: btm_bteManagementCallback()
