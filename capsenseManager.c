@@ -10,18 +10,18 @@
 
 static SemaphoreHandle_t cpm_semaphore;
 
-const cy_stc_sysint_t CapSense_ISR_cfg =
+static const cy_stc_sysint_t CapSense_ISR_cfg =
 {
     .intrSrc = csd_interrupt_IRQn, /* Interrupt source is the CSD interrupt */
     .intrPriority = 7u,            /* Interrupt priority is 7 */
 };
 
-void cpm_isr(void)
+static void cpm_isr(void)
 {
     Cy_CapSense_InterruptHandler(CYBSP_CSD_HW, &cy_capsense_context);
 }
 
-void cpm_callback(cy_stc_active_scan_sns_t *ptrActiveScan)
+static void cpm_callback(cy_stc_active_scan_sns_t *ptrActiveScan)
 {
     xSemaphoreGiveFromISR(cpm_semaphore,0);
 

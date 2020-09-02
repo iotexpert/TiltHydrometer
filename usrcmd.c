@@ -60,6 +60,8 @@ static int usrcmd_nextScreen(int argc,char **argv);
 static int usrcmd_autoRotate(int argc,char **argv);
 static int usrcmd_table(int argc,char **argv);
 
+static int usrcmd_task(int argc,char **argv);
+
 
 typedef struct {
     char *cmd;
@@ -77,6 +79,8 @@ static const cmd_table_t cmdlist[] = {
     { "ns","next screen", usrcmd_nextScreen},
     { "auto","Toggle Screen Auto Rotate", usrcmd_autoRotate},
     { "table","Move to table screen", usrcmd_table},
+    { "task","Dump the FreeRTOS Task List", usrcmd_task},
+
 
 };
 
@@ -218,5 +222,21 @@ static int usrcmd_autoRotate(int argc,char **argv)
 static int usrcmd_table(int argc,char **argv)
 {
     dm_submitTable();
+    return 0;
+}
+
+
+static int usrcmd_task(int argc,char **argv)
+{
+    // 40 bytes/task + some margin
+    char buff[40*10 + 100];
+
+    vTaskList( buff );
+    printf("Name          State Priority   Stack  Num\n");
+    printf("------------------------------------------\n");
+    printf("%s",buff);
+
+    printf("‘B’ – Blocked\n‘R’ – Ready\n‘D’ – Deleted (waiting clean up)\n‘S’ – Suspended, or Blocked without a timeout\n");
+    printf("Stack = bytes free at highwater\n");
     return 0;
 }
