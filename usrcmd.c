@@ -52,7 +52,7 @@ static int usrcmd_ntopt_callback(int argc, char **argv, void *extobj);
 static int usrcmd_help(int argc, char **argv);
 static int usrcmd_info(int argc, char **argv);
 static int usrcmd_clear(int argc, char **argv);
-static int usrcmd_printargs(int argc, char **argv);
+static int usrcmd_pargs(int argc, char **argv);
 static int usrcmd_newData(int argc,char **argv);
 static int usrcmd_initData(int argc,char **argv);
 
@@ -60,7 +60,7 @@ static int usrcmd_nextScreen(int argc,char **argv);
 static int usrcmd_autoRotate(int argc,char **argv);
 static int usrcmd_table(int argc,char **argv);
 
-static int usrcmd_task(int argc,char **argv);
+static int usrcmd_list(int argc,char **argv);
 
 
 typedef struct {
@@ -73,13 +73,13 @@ static const cmd_table_t cmdlist[] = {
     { "help", "This is a description text string for help command.", usrcmd_help },
     { "info", "This is a description text string for info command.", usrcmd_info },
     { "clear", "Clear the screen", usrcmd_clear },
-    { "printargs","print the list of arguments", usrcmd_printargs},
+    { "pargs","print the list of arguments", usrcmd_pargs},
     { "nd","inject new data tilt# gravity temp", usrcmd_newData},
     { "id","init data for all tilts", usrcmd_initData},
     { "ns","next screen", usrcmd_nextScreen},
     { "auto","Toggle Screen Auto Rotate", usrcmd_autoRotate},
     { "table","Move to table screen", usrcmd_table},
-    { "task","Dump the FreeRTOS Task List", usrcmd_task},
+    { "list","Dump the FreeRTOS Task List", usrcmd_list},
 
 
 };
@@ -145,7 +145,7 @@ static int usrcmd_clear(int argc, char **argv)
     return 0;
 }
 
-static int usrcmd_printargs(int argc, char **argv)
+static int usrcmd_pargs(int argc, char **argv)
 {
     printf("ARGC = %d\n",argc);
 
@@ -226,7 +226,7 @@ static int usrcmd_table(int argc,char **argv)
 }
 
 
-static int usrcmd_task(int argc,char **argv)
+static int usrcmd_list(int argc,char **argv)
 {
     // 40 bytes/task + some margin
     char buff[40*10 + 100];

@@ -180,7 +180,6 @@ static bool dm_displayScreenSplashPre()
 
 static void dm_displayScreenSplashInit()
 {
-    printf("Splash\n");
     GUI_SetColor(SPLASH_FGCOLOR);
     GUI_SetBkColor(SPLASH_BGCOLOR);
     GUI_SetFont(SPLASH_FONT);
