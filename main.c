@@ -26,16 +26,18 @@ ntshell_t nts_shell;
 
 void nts_task()
 {
-  printf("Started ntshell\n");
-  ntshell_init(
+    printf("Started Tilt Hydrometer\n");
+    setvbuf(stdin, NULL, _IONBF, 0);
+
+    ntshell_init(
 	       &nts_shell,
 	       ntshell_read,
 	       ntshell_write,
 	       ntshell_callback,
 	       (void *)&nts_shell);
-  ntshell_set_prompt(&nts_shell, "Tilt Sensor> ");
-  vtsend_erase_display(&nts_shell.vtsend);
-  ntshell_execute(&nts_shell);
+    ntshell_set_prompt(&nts_shell, "Tilt Sensor> ");
+    vtsend_erase_display(&nts_shell.vtsend);
+    ntshell_execute(&nts_shell);
 }
 
 void blink_task(void *arg)
@@ -58,9 +60,6 @@ int main(void)
     __enable_irq();
 
     cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE);
-    setvbuf(stdin, NULL, _IONBF, 0);
-    setvbuf(stdout, NULL, _IONBF, 0);
-    printf("Started Application\n");
 
     cybt_platform_config_init(&bt_platform_cfg_settings);
     wiced_bt_stack_init (btm_bteManagementCallback, &wiced_bt_cfg_settings);
