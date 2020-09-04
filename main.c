@@ -19,6 +19,8 @@
 #include "ntlibc.h"
 #include "psoc6_ntshell_port.h"
 
+#include "fileSystemManager.h"
+
 #include "capsenseManager.h"
 volatile int uxTopUsedPriority ;
 
@@ -71,6 +73,7 @@ int main(void)
     xTaskCreate(dm_task, "Display Manager", configMINIMAL_STACK_SIZE*3,0 /* args */ ,0 /* priority */, 0);
     xTaskCreate(tdm_task, "Tile Data Manager", configMINIMAL_STACK_SIZE*2,0 /* args */ ,0 /* priority */, 0);
     xTaskCreate(cpm_task, "CapSense Manager", configMINIMAL_STACK_SIZE*2,0 /* args */ ,0 /* priority */, 0);
+    xTaskCreate(fsm_task, "Filesystem Manager", configMINIMAL_STACK_SIZE*2,0 /* args */ ,0 /* priority */, 0);
 
     vTaskStartScheduler();
 }

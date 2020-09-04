@@ -9,12 +9,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "timers.h"
 
 #include "tiltDataManager.h"
+#include "fileSystemManager.h"
 
 typedef enum {
     ADD_DATA_POINT,
     GET_DATA_POINT,
+    PROCESS_DATA,
 } tdm_cmd_t;
 
 typedef struct {
@@ -33,6 +36,7 @@ typedef struct  {
     int numDataSeen;
 } tilt_t;
 
+static void tdm_submitProcessData();
 
 static QueueHandle_t tdm_cmdQueue;
 
@@ -54,15 +58,59 @@ static tilt_t tiltDB [] =
 #define NUM_TILT (sizeof(tiltDB)/sizeof(tilt_t))
 
 
+
+static void tdm_processData()
+{
+    for(int i=0;i<NUM_TILT;i++)
+    {
+        if(tiltDB[i].data == 0)
+        {
+            continue;
+        }
+
+        tdm_tiltData_t *data = tiltDB[i].data;
+        data->gravity /= tiltDB[i].numDataPoints;
+        data->temperature /= tiltDB[i].numDataPoints;
+
+        tiltDB[i].numDataPoints = 0;
+        tiltDB[i].data = 0;
+        
+        fsm_submitProcessData(i,data);
+    }
+}
+/*
+typedef struct {
+    float gravity;
+    int temperature;
+    int8_t rssi;
+    int8_t txPower;
+	uint32_t time;
+} tdm_tiltData_t;
+
+*/
+
 static void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data)
 {
-    if(tiltDB[handle].data != 0)
+    if(tiltDB[handle].data == 0)
     {
-        free(tiltDB[handle].data);
+        tiltDB[handle].data = data; 
+        tiltDB[handle].numDataSeen += 1;
+        tiltDB[handle].numDataPoints = 1;
+
     }
-    tiltDB[handle].data = data; 
-    tiltDB[handle].numDataSeen += 1;
-    tiltDB[handle].numDataPoints = 1;
+    else
+    {
+        tiltDB[handle].data->gravity     += data->gravity;
+        tiltDB[handle].data->temperature += data->temperature;
+        tiltDB[handle].numDataSeen += 1;
+        tiltDB[handle].numDataPoints += 1;
+
+        free(data);
+    }
+
+    tiltDB[handle].data->time    = data->time;
+    tiltDB[handle].data->rssi    = data->rssi;
+    tiltDB[handle].data->txPower = data->txPower;
 }
 
 // This function returns a malloc'd copy of the front of the most recent datapoint ... this function should only be used 
@@ -72,6 +120,10 @@ static tdm_tiltData_t *tdm_getDataPointCopy(tdm_tiltHandle_t handle)
     tdm_tiltData_t *dp;
     dp = malloc(sizeof(tdm_tiltData_t));
     memcpy(dp,tiltDB[handle].data,sizeof(tdm_tiltData_t));
+
+    dp->gravity = dp->gravity / tiltDB[handle].numDataPoints;
+    dp->temperature = dp->temperature / tiltDB[handle].numDataPoints;
+
     return dp;
 }
 
@@ -88,6 +140,12 @@ void tdm_task(void *arg)
     tdm_cmdMsg_t msg;
     tdm_tiltData_t *dp;
     tdm_dataRsp_t response;
+
+    TimerHandle_t tdm_processDataTimer;
+
+    tdm_processDataTimer=xTimerCreate("purge",1000*60,pdTRUE,0,tdm_submitProcessData);
+    xTimerStart(tdm_processDataTimer,0);
+
     while(1)
     {
         xQueueReceive(tdm_cmdQueue,&msg,portMAX_DELAY);
@@ -100,6 +158,10 @@ void tdm_task(void *arg)
                 dp = tdm_getDataPointCopy(msg.tilt);
                 response.response = dp;
                 xQueueSend(msg.msg,&response,0); // ARH 0 is probably a bad idea
+            break;
+
+            case PROCESS_DATA:
+                tdm_processData();
             break;
         }
     }
@@ -168,6 +230,11 @@ uint32_t tdm_getActiveTiltMask()
     return mask;
 }
 
+uint32_t tdm_getNumDataSeen(tdm_tiltHandle_t handle)
+{
+    return tiltDB[handle].numDataSeen;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // These functions submit commands to main command queue: tdm_cmdQueue
@@ -198,4 +265,11 @@ void  tdm_submitGetDataCopy(tdm_tiltHandle_t handle,QueueHandle_t queue)
         printf("failed to send to dmQueue\n");
     }
 
+}
+
+static void tdm_submitProcessData()
+{
+    tdm_cmdMsg_t msg;
+    msg.cmd = PROCESS_DATA;
+    xQueueSend(tdm_cmdQueue,&msg,0);
 }

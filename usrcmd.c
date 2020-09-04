@@ -44,6 +44,7 @@
 #include "displayManager.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "fileSystemManager.h"
 
 
 typedef int (*USRCMDFUNC)(int argc, char **argv);
@@ -61,6 +62,9 @@ static int usrcmd_autoRotate(int argc,char **argv);
 static int usrcmd_table(int argc,char **argv);
 
 static int usrcmd_list(int argc,char **argv);
+
+static int usrcmd_seen(int argc,char **argv);
+static int usrcmd_printHistory(int argc,char **argv);
 
 
 typedef struct {
@@ -80,8 +84,8 @@ static const cmd_table_t cmdlist[] = {
     { "auto","Toggle Screen Auto Rotate", usrcmd_autoRotate},
     { "table","Move to table screen", usrcmd_table},
     { "list","Dump the FreeRTOS Task List", usrcmd_list},
-
-
+    { "seen","seen handle: return number seen", usrcmd_seen},
+    { "ph","ph handle: print the history of tilt ", usrcmd_printHistory},
 };
 
 int usrcmd_execute(const char *text)
@@ -240,3 +244,32 @@ static int usrcmd_list(int argc,char **argv)
     printf("Stack = bytes free at highwater\n");
     return 0;
 }
+
+
+
+static int usrcmd_seen(int argc,char **argv)
+{
+    int tilt;
+
+    if(argc == 2)
+    {
+        sscanf(argv[1],"%d",&tilt);
+        printf("Handle = %d Seen=%d\n",tilt,(int)tdm_getNumDataSeen(tilt));
+    }
+    return 0;
+}
+
+
+static int usrcmd_printHistory(int argc,char **argv)
+{
+    int tilt;
+
+    if(argc == 2)
+    {
+        sscanf(argv[1],"%d",&tilt);
+        fsm_submitPrintData(tilt);
+    }
+    return 0;
+}
+
+

@@ -12,6 +12,7 @@ typedef struct {
     int8_t rssi;
     int8_t txPower;
 	uint32_t time;
+    struct tdm_tiltData_t *next;
 } tdm_tiltData_t;
 
 typedef struct {
@@ -24,10 +25,11 @@ void tdm_task(void *arg);
 void tdm_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_t *p_scan_result);
 
 /////////////// Generally callable threadsafe - non blocking
-char *tdm_colorString(tdm_tiltHandle_t handle);    // Return a char * to the color string for the tilt handle
-GUI_COLOR tdm_colorGUI(tdm_tiltHandle_t handle);   // Return a GUI_COLOR for the tilt handle
-int tdm_getNumTilt();                              // Returns the number of possible tilts (probably always 8)
-uint32_t tdm_getActiveTiltMask();                  // Return a bitmask of the active handles
+char *tdm_colorString(tdm_tiltHandle_t handle);        // Return a char * to the color string for the tilt handle
+GUI_COLOR tdm_colorGUI(tdm_tiltHandle_t handle);      // Return a GUI_COLOR for the tilt handle
+int tdm_getNumTilt();                                 // Returns the number of possible tilts (probably always 8)
+uint32_t tdm_getActiveTiltMask();                     // Return a bitmask of the active handles
+uint32_t tdm_getNumDataSeen(tdm_tiltHandle_t handle); // Return number of data points seen
 
 
 void tdm_submitNewData(tdm_tiltHandle_t handle,tdm_tiltData_t *data);
