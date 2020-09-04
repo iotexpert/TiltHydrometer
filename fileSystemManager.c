@@ -38,7 +38,6 @@ void fsm_task(void *arg)
         switch(msg.cmd)
         {
             case PROCESS_DATA:
-                printf("Got Data %d Grav=%1.3f Temp=%d\n",msg.handle,msg.data->gravity,msg.data->temperature);
                 msg.data->next = tiltHistory[msg.handle];
                 tiltHistory[msg.handle] = msg.data;
             break;

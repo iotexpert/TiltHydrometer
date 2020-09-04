@@ -52,17 +52,27 @@ void cpm_task()
         button0Curr = Cy_CapSense_IsWidgetActive(CY_CAPSENSE_BUTTON0_WDGT_ID,&cy_capsense_context);
         button1Curr = Cy_CapSense_IsWidgetActive(CY_CAPSENSE_BUTTON1_WDGT_ID,&cy_capsense_context);
 
-        if(button0Curr != button0Prev && button0Curr == 1)
+        if(button0Curr == 1 && button1Curr == 1 && button1Prev==0 && button0Prev == 0)
+        {
+            printf("pressed both\n");
+        }
+        else if (button0Curr == 0 && button1Curr == 0 && button0Prev==1 && button1Prev == 1)
+        {
+            printf("Released both\n");
+        }
+        else if(button0Curr != button0Prev && button0Curr == 1)
         {
             dm_submitAutoCmd();
         }
-        if(button1Curr != button1Prev && button1Curr == 1)
+        else if(button1Curr != button1Prev && button1Curr == 1)
         {
             dm_submitNextScreenCmd();
         }
 
         button0Prev = button0Curr;
         button1Prev = button1Curr;
+
+        vTaskDelay(20);
 
     }
 }

@@ -68,26 +68,17 @@ static void tdm_processData()
             continue;
         }
 
-        tdm_tiltData_t *data = tiltDB[i].data;
-        data->gravity /= tiltDB[i].numDataPoints;
-        data->temperature /= tiltDB[i].numDataPoints;
+        tiltDB[i].data->gravity /= tiltDB[i].numDataPoints;
+        tiltDB[i].data->temperature /= tiltDB[i].numDataPoints;
+        tiltDB[i].numDataPoints = 1;
 
-        tiltDB[i].numDataPoints = 0;
-        tiltDB[i].data = 0;
-        
+        tdm_tiltData_t *data = malloc(sizeof(tdm_tiltData_t)); 
+        memcpy(data,tiltDB[i].data,sizeof(tdm_tiltData_t));
+
         fsm_submitProcessData(i,data);
     }
 }
-/*
-typedef struct {
-    float gravity;
-    int temperature;
-    int8_t rssi;
-    int8_t txPower;
-	uint32_t time;
-} tdm_tiltData_t;
 
-*/
 
 static void tdm_addData(tdm_tiltHandle_t handle, tdm_tiltData_t *data)
 {
