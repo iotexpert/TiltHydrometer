@@ -16,7 +16,7 @@
 #include "wiced_bt_dev.h"
 #include "wiced_bt_trace.h"
 
-#include "btutil.h"
+//#include "btutil.h"
 #include "tiltDataManager.h"
 
 QueueHandle_t btm_cmdQueue;
@@ -101,7 +101,7 @@ wiced_result_t btm_bteManagementCallback(wiced_bt_management_evt_t event, wiced_
             break;
 
         default:
-            printf("Unhandled Bluetooth Management Event: 0x%x %s\n", event, btutil_getBTEventName(event));
+            //printf("Unhandled Bluetooth Management Event: 0x%x %s\n", event, btutil_getBTEventName(event));
             break;
     }
 
