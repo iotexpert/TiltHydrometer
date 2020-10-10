@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "string.h"
+#include <string.h>
 
 #include "GUI.h"
 
@@ -56,8 +56,6 @@ static tilt_t tiltDB [] =
     {"Pink"  , GUI_PINK,   {IBEACON_HEADER,0xA4,0x95,0xBB,0x80,0xC5,0xB1,0x4B,0x44,0xB5,0x12,0x13,0x70,0xF0,0x2D,0x74,0xDE},0,0,0},
 };
 #define NUM_TILT (sizeof(tiltDB)/sizeof(tilt_t))
-
-
 
 static void tdm_processData()
 {
@@ -188,7 +186,6 @@ void tdm_processIbeacon(uint8_t *mfgAdvField,int len,wiced_bt_ble_scan_results_t
                 data->rssi        = p_scan_result->rssi;
 
                 tdm_submitNewData(i,data);
-
             }
         }
     }
